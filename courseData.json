@@ -1,0 +1,44 @@
+[
+	{
+		"title": "Golang for Node.js Developers",
+		"description": "Build and Deploy a full stack app with Go and React",
+		"imageUrl": "https://i3.ytimg.com/vi/zw8z_o_kDqc/maxresdefault.jpg",
+		"price": 54.99
+	},
+	{
+		"title": "GraphQL Crash Course",
+		"description": "Build a full-stack MERN application with GraphQL. Learn to create efficient APIs, implement real-time subscriptions, and optimize data fetching.",
+		"imageUrl": "https://i3.ytimg.com/vi/Vr-QHtbmd38/maxresdefault.jpg",
+		"price": 34.99
+	},
+	{
+		"title": "Full Stack Social Media App",
+		"description": "Create a feature-rich social media application using React, Node.js, and MongoDB. Implement real-time updates, user interactions, and cloud image uploads.",
+		"imageUrl": "https://i3.ytimg.com/vi/G4V4xO9wyD8/maxresdefault.jpg",
+		"price": 69.99
+	},
+	{
+		"title": "Advanced MERN Authentication",
+		"description": "Master advanced authentication techniques in MERN stack applications. Cover email verification, password recovery, and enhanced security measures.",
+		"imageUrl": "https://i3.ytimg.com/vi/pmvEgZC55Cg/maxresdefault.jpg",
+		"price": 44.99
+	},
+	{
+		"title": "Build an E-commerce Store",
+		"description": "Dive into Next.js by building a complete e-commerce platform. Learn server-side rendering, API routes, and integrating with payment gateways.",
+		"imageUrl": "https://i3.ytimg.com/vi/sX57TLIPNx8/maxresdefault.jpg",
+		"price": 59.99
+	},
+	{
+		"title": "Build Your Own Twitter Clone",
+		"description": "Master TypeScript while creating a Twitter clone. This advanced course covers complex TypeScript features, real-time updates, and social media architecture.",
+		"imageUrl": "https://i3.ytimg.com/vi/4GUVz2psWUg/maxresdefault.jpg",
+		"price": 39.99
+	},
+	{
+		"title": "Build a Netflix Clone",
+		"description": "Learn React by building a fully functional Netflix clone. This course covers React hooks, state management, and integrating with a movie API.",
+		"imageUrl": "https://i3.ytimg.com/vi/gRroBZczKAU/maxresdefault.jpg",
+		"price": 29.99
+	}
+]
