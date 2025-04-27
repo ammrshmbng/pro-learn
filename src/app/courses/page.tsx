@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import PurchaseButton from "@/components/PurchaseButton";
 
 const page = async () => {
 
@@ -39,7 +40,7 @@ const page = async () => {
                                     ${course.price.toFixed(2)}
                                 </Badge>
                                 <SignedIn>
-                                    Purchase
+                                    <PurchaseButton courseId={course._id} />
                                 </SignedIn>
                                 <SignedOut>
                                     <SignInButton mode='modal'>

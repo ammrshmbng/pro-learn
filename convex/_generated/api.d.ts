@@ -17,6 +17,7 @@ import type {
 } from "convex/server";
 import type * as courses from "../courses.js";
 import type * as http from "../http.js";
+import type * as stripe from "../stripe.js";
 import type * as users from "../users.js";
 
 /**
@@ -30,6 +31,7 @@ import type * as users from "../users.js";
 declare const fullApi: ApiFromModules<{
   courses: typeof courses;
   http: typeof http;
+  stripe: typeof stripe;
   users: typeof users;
 }>;
 export declare const api: FilterApi<
