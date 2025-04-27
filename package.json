@@ -11,6 +11,9 @@
   "dependencies": {
     "@clerk/nextjs": "5.7.5",
     "@radix-ui/react-slot": "^1.2.0",
+    "@radix-ui/react-toast": "^1.2.11",
+    "@upstash/ratelimit": "2.0.3",
+    "@upstash/redis": "1.34.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "1.16.6",
@@ -18,6 +21,7 @@
     "next": "14.2.15",
     "react": "^18",
     "react-dom": "^18",
+    "sonner": "1.5.0",
     "stripe": "17.2.1",
     "svix": "^1.64.1",
     "tailwind-merge": "^3.2.0",
