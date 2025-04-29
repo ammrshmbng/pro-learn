@@ -45,71 +45,92 @@ export async function POST(req: Request) {
 
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+	console.log('Received session:', JSON.stringify(session, null, 2));
+
+	if (session.mode === 'subscription') {
+		console.log('Subscription payment - skipping checkout handler');
+		return;
+	}
+
 	const courseId = session.metadata?.courseId;
 	const stripeCustomerId = session.customer as string;
 
 	if (!courseId || !stripeCustomerId) {
+		console.error('Missing data:', { courseId, stripeCustomerId });
 		throw new Error("Missing courseId or stripeCustomerId");
 	}
 
-	const user = await convex.query(api.users.getUserByStripeCustomerId, { stripeCustomerId });
+	try {
+		const user = await convex.query(api.users.getUserByStripeCustomerId, { stripeCustomerId });
 
-	if (!user) {
-		throw new Error("User not found");
+		if (!user) {
+			console.error('User not found for stripeCustomerId:', stripeCustomerId);
+			throw new Error("User not found");
+		}
+
+		await convex.mutation(api.purchases.recordPurchase, {
+			userId: user._id,
+			courseId: courseId as Id<"courses">,
+			amount: session.amount_total as number,
+			stripePurchaseId: session.id,
+		});
+
+		console.log('Purchase recorded successfully');
+	} catch (error) {
+		console.error('Error in handleCheckoutSessionCompleted:', error);
+		throw error;
 	}
-
-	await convex.mutation(api.purchases.recordPurchase, {
-		userId: user._id,
-		courseId: courseId as Id<"courses">,
-		amount: session.amount_total as number,
-		stripePurchaseId: session.id,
-	});
-
-	
 }
 
 async function handleSubscriptionUpsert(subscription: Stripe.Subscription, eventType: string) {
-	if (subscription.status !== "active" || !subscription.latest_invoice) {
-		console.log(`Skipping subscription ${subscription.id} - Status: ${subscription.status}`);
-		return;
-	}
+    console.log('=== START SUBSCRIPTION UPSERT ===');
+    console.log('Event Type:', eventType);
+    console.log('Full subscription object:', JSON.stringify(subscription, null, 2));
+    
+    // Cek kondisi sebelum proses
+    if (!["active", "trialing", "past_due"].includes(subscription.status)) {
+        console.error(`Skipping subscription with status: ${subscription.status}`);
+        return;
+    }
 
-	const stripeCustomerId = subscription.customer as string;
-	const user = await convex.query(api.users.getUserByStripeCustomerId, { stripeCustomerId });
+    try {
+        const stripeCustomerId = subscription.customer as string;
+        console.log('Looking for user with Stripe Customer ID:', stripeCustomerId);
+        
+        const user = await convex.query(api.users.getUserByStripeCustomerId, { stripeCustomerId });
+        console.log('User found?', !!user);
+        
+        if (!user) {
+            console.error(`No user found for Stripe Customer ID: ${stripeCustomerId}`);
+            return;
+        }
 
-	if (!user) {
-		throw new Error(`User not found for stripe customer id: ${stripeCustomerId}`);
-	}
+        // Pastikan kita mengambil nilai yang benar dari objek subscription
+        const subscriptionData = {
+            userId: user._id,
+            stripeSubscriptionId: subscription.id,
+            status: subscription.status,
+            planType: subscription.items.data[0]?.plan.interval as "month" | "year",
+            // Konversi ke number untuk memastikan tipe data yang benar
+            currentPeriodStart: Math.floor(subscription.current_period_start || Date.now() / 1000),
+            currentPeriodEnd: Math.floor(subscription.current_period_end || (Date.now() / 1000 + 30 * 24 * 60 * 60)), // default 30 hari
+            cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+        };
+        
+        console.log('Attempting to upsert subscription with data:', subscriptionData);
 
-	try {
-		await convex.mutation(api.subscriptions.upsertSubscription, {
-			userId: user._id,
-			stripeSubscriptionId: subscription.id,
-			status: subscription.status,
-			planType: subscription.items.data[0].plan.interval as "month" | "year",
-			currentPeriodStart: subscription.current_period_start,
-			currentPeriodEnd: subscription.current_period_end,
-			cancelAtPeriodEnd: subscription.cancel_at_period_end,
-		});
-		console.log(`Successfully processed ${eventType} for subscription ${subscription.id}`);
-
-		// const isCreation = eventType === "customer.subscription.created";
-
-		// if (isCreation && process.env.NODE_ENV === "development") {
-		// 	await resend.emails.send({
-		// 		from: "MasterClass <onboarding@resend.dev>",
-		// 		to: user.email,
-		// 		subject: "Welcome to MasterClass Pro!",
-		// 		react: ProPlanActivatedEmail({
-		// 			name: user.name,
-		// 			planType: subscription.items.data[0].plan.interval,
-		// 			currentPeriodStart: subscription.current_period_start,
-		// 			currentPeriodEnd: subscription.current_period_end,
-		// 			url: process.env.NEXT_PUBLIC_APP_URL!,
-		// 		}),
-		// 	});
-		// }
-	} catch (error) {
-		console.error(`Error processing ${eventType} for subscription ${subscription.id}:`, error);
-	}
+        const result = await convex.mutation(api.subscriptions.upsertSubscription, subscriptionData);
+        console.log('Upsert completed successfully:', result);
+        
+    } catch (error) {
+        console.error('=== ERROR IN SUBSCRIPTION UPSERT ===');
+        console.error('Error details:', {
+            name: error instanceof Error ? error.name : 'Unknown',
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : 'No stack trace'
+        });
+        throw error;
+    } finally {
+        console.log('=== END SUBSCRIPTION UPSERT ===');
+    }
 }
