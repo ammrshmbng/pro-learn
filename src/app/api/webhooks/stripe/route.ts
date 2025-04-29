@@ -26,6 +26,10 @@ export async function POST(req: Request) {
 			case "checkout.session.completed":
 				await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
 				break;
+			case "customer.subscription.created":
+			case "customer.subscription.updated":
+				await handleSubscriptionUpsert(event.data.object as Stripe.Subscription, event.type);
+				break;
 			default:
 				console.log(`Unhandled event type: ${event.type}`);
 				break;
@@ -62,4 +66,50 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 	});
 
 	
+}
+
+async function handleSubscriptionUpsert(subscription: Stripe.Subscription, eventType: string) {
+	if (subscription.status !== "active" || !subscription.latest_invoice) {
+		console.log(`Skipping subscription ${subscription.id} - Status: ${subscription.status}`);
+		return;
+	}
+
+	const stripeCustomerId = subscription.customer as string;
+	const user = await convex.query(api.users.getUserByStripeCustomerId, { stripeCustomerId });
+
+	if (!user) {
+		throw new Error(`User not found for stripe customer id: ${stripeCustomerId}`);
+	}
+
+	try {
+		await convex.mutation(api.subscriptions.upsertSubscription, {
+			userId: user._id,
+			stripeSubscriptionId: subscription.id,
+			status: subscription.status,
+			planType: subscription.items.data[0].plan.interval as "month" | "year",
+			currentPeriodStart: subscription.current_period_start,
+			currentPeriodEnd: subscription.current_period_end,
+			cancelAtPeriodEnd: subscription.cancel_at_period_end,
+		});
+		console.log(`Successfully processed ${eventType} for subscription ${subscription.id}`);
+
+		// const isCreation = eventType === "customer.subscription.created";
+
+		// if (isCreation && process.env.NODE_ENV === "development") {
+		// 	await resend.emails.send({
+		// 		from: "MasterClass <onboarding@resend.dev>",
+		// 		to: user.email,
+		// 		subject: "Welcome to MasterClass Pro!",
+		// 		react: ProPlanActivatedEmail({
+		// 			name: user.name,
+		// 			planType: subscription.items.data[0].plan.interval,
+		// 			currentPeriodStart: subscription.current_period_start,
+		// 			currentPeriodEnd: subscription.current_period_end,
+		// 			url: process.env.NEXT_PUBLIC_APP_URL!,
+		// 		}),
+		// 	});
+		// }
+	} catch (error) {
+		console.error(`Error processing ${eventType} for subscription ${subscription.id}:`, error);
+	}
 }
