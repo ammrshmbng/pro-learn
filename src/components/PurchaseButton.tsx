@@ -32,7 +32,10 @@ const PurchaseButton = ({ courseId }: { courseId: Id<"courses"> }) => {
 	) || { hasAccess: false };
 
     const handlePurchase = async () => {
-		if (!user) return alert("Please log in to purchase");
+		if (!user) return toast({
+			title: "Please log in to purchase",
+			description: "Friday, February 10, 2023 at 5:57 PM",
+		  });
 		setIsLoading(true);
 		try {
 			const { checkoutUrl } = await createCheckoutSession({ courseId });

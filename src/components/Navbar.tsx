@@ -50,7 +50,7 @@ const Navbar = () => {
 
 				<SignedOut>
 					<SignInButton mode='modal'>
-						<Button variant='outline' size='sm'>
+						<Button variant='outline' size='sm' className="text-black font-normal">
 							Log in
 						</Button>
 					</SignInButton>
