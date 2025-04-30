@@ -3,6 +3,10 @@ import stripe from "@/lib/stripe";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import PurchaseConfirmationEmail from "@/emails/PurchaseConfirmationEmail";
+import resend from "@/lib/resend";
+import ProPlanActivatedEmail from "@/emails/ProPlanActivatedEmail";
+
 
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -78,6 +82,26 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 			stripePurchaseId: session.id,
 		});
 
+		if (
+			session.metadata &&
+			session.metadata.courseTitle &&
+			session.metadata.courseImageUrl &&
+			process.env.NODE_ENV === "development"
+		) {
+			await resend.emails.send({
+				from: "MasterClass <onboarding@resend.dev>",
+				to: user.email,
+				subject: "Purchase Confirmed",
+				react: PurchaseConfirmationEmail({
+					customerName: user.name,
+					courseTitle: session.metadata?.courseTitle,
+					courseImage: session.metadata?.courseImageUrl,
+					courseUrl: `${process.env.NEXT_PUBLIC_APP_URL}/courses/${courseId}`,
+					purchaseAmount: session.amount_total! / 100,
+				}),
+			});
+		}
+
 		console.log('Purchase recorded successfully');
 	} catch (error) {
 		console.error('Error in handleCheckoutSessionCompleted:', error);
@@ -124,6 +148,23 @@ async function handleSubscriptionUpsert(subscription: Stripe.Subscription, event
 
         const result = await convex.mutation(api.subscriptions.upsertSubscription, subscriptionData);
         console.log('Upsert completed successfully:', result);
+
+		const isCreation = eventType === "customer.subscription.created";
+
+		if (isCreation && process.env.NODE_ENV === "development") {
+			await resend.emails.send({
+				from: "MasterClass <onboarding@resend.dev>",
+				to: user.email,
+				subject: "Welcome to MasterClass Pro!",
+				react: ProPlanActivatedEmail({
+					name: user.name,
+					planType: subscription.items.data[0].plan.interval,
+					currentPeriodStart: subscription.current_period_start,
+					currentPeriodEnd: subscription.current_period_end,
+					url: process.env.NEXT_PUBLIC_APP_URL!,
+				}),
+			});
+		}
         
     } catch (error) {
         console.error('=== ERROR IN SUBSCRIPTION UPSERT ===');
