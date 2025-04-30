@@ -9,7 +9,9 @@ export default defineSchema({
     clerkId: v.string(),
 		stripeCustomerId: v.string(),
 		currentSubscriptionId: v.optional(v.id("subscriptions")),
-  }).index("by_clerkId", ["clerkId"]).index("by_stripeCustomerId", ["stripeCustomerId"]),
+  }).index("by_clerkId", ["clerkId"])
+  .index("by_stripeCustomerId", ["stripeCustomerId"])
+  .index("by_currentSubscriptionId", ["currentSubscriptionId"]),
 
   courses: defineTable({
 		title: v.string(),
